@@ -32,7 +32,7 @@ output_data = np.array([[classify(sequence[:i + 1])
                          for i in range(len(sequence))]
                         for sequence in input_data])
 
-# conver data to one-hot encoding
+# convert data to one-hot encoding
 input_data = np.eye(num_features)[input_data]
 output_data = np.eye(num_classes)[output_data]
 
