@@ -5,9 +5,6 @@ import tensorflow as tf
 # Module structure based off of
 # https://danijar.com/structuring-your-tensorflow-models/
 
-# Variable sequence length algorithms based off of
-# https://danijar.com/variable-sequence-lengths-in-tensorflow/
-
 
 def lazy_property(function):
 
@@ -46,6 +43,12 @@ class BiLSTM(object):
         return length
 
     @lazy_property
+    def mask(self):
+        max_length = int(self.target.get_shape()[1])
+        return tf.sequence_mask(self.length, maxlen=max_length,
+                                dtype=tf.float32)
+
+    @lazy_property
     def prediction(self):
         # Word embeddings
         embedding_matrix = self._random_variable(
@@ -79,8 +82,8 @@ class BiLSTM(object):
         # Compute cross entropy for each frame
         cross_entropy = self.target * tf.log(self.prediction)
         cross_entropy = -tf.reduce_sum(cross_entropy, reduction_indices=2)
-        mask = tf.sign(tf.reduce_max(tf.abs(self.target), reduction_indices=2))
-        cross_entropy *= mask
+
+        cross_entropy *= self.mask
 
         # Average over actual sequence lengths
         cross_entropy = tf.reduce_sum(cross_entropy, reduction_indices=1)
@@ -98,8 +101,8 @@ class BiLSTM(object):
         mistakes = tf.not_equal(tf.argmax(self.target, 2),
                                 tf.argmax(self.prediction, 2))
         mistakes = tf.cast(mistakes, tf.float32)
-        mask = tf.sign(tf.reduce_max(tf.abs(self.target), reduction_indices=2))
-        mistakes *= mask
+
+        mistakes *= self.mask
 
         # Average over actual sequence lengths.
         mistakes = tf.reduce_sum(mistakes, reduction_indices=1)
